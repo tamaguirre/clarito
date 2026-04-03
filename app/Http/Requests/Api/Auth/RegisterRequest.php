@@ -23,8 +23,8 @@ class RegisterRequest extends FormRequest
             'password' => ['required', 'string', 'confirmed', 'min:8'],
             'birth_date' => ['required', 'date', 'before_or_equal:today'],
             'education_level_id' => ['required', 'integer', Rule::exists('education_levels', 'id')->whereNull('deleted_at')],
-            'conditions' => ['required', 'array', 'min:1'],
-            'conditions.*' => ['required', 'integer', 'distinct', Rule::exists('conditions', 'id')->whereNull('deleted_at')],
+            'conditions' => ['nullable', 'array'],
+            'conditions.*' => ['integer', 'distinct', Rule::exists('conditions', 'id')->whereNull('deleted_at')],
         ];
     }
 }

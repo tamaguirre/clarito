@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\Auth\RegisterRequest;
+use App\Http\Requests\Api\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -11,22 +11,23 @@ use Illuminate\Support\Facades\Hash;
 use Laravel\Passport\ClientRepository;
 use RuntimeException;
 
-class RegisterController extends Controller
+class LoginController extends Controller
 {
-    public function __invoke(RegisterRequest $request): JsonResponse
+    public function __invoke(LoginRequest $request): JsonResponse
     {
         $validated = $request->validated();
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'birth_date' => $validated['birth_date'],
-            'education_level_id' => $validated['education_level_id'],
-        ]);
+        $user = User::query()
+            ->where('email', $validated['email'])
+            ->first();
 
-        $user->conditions()->sync($validated['conditions'] ?? []);
-        $user->load(['educationLevel', 'conditions']);
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
+            return response()->json([
+                'errors' => [
+                    'email' => ['Credenciales inválidas.'],
+                ],
+            ], 422);
+        }
 
         $clientRepository = app(ClientRepository::class);
 
@@ -39,6 +40,8 @@ class RegisterController extends Controller
             );
         }
 
+        $user->load(['educationLevel', 'conditions']);
+
         $accessToken = $user->createToken('local-web')->accessToken;
 
         return (new UserResource($user))
@@ -49,6 +52,6 @@ class RegisterController extends Controller
                 ],
             ])
             ->response()
-            ->setStatusCode(201);
+            ->setStatusCode(200);
     }
 }

@@ -71,6 +71,6 @@ class RegisterApiTest extends TestCase
 
         $response
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['name', 'email', 'password', 'birth_date', 'education_level_id', 'conditions']);
+            ->assertJsonValidationErrors(['name', 'email', 'password', 'birth_date', 'education_level_id']);
     }
 }
