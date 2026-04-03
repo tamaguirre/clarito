@@ -23,6 +23,18 @@ type RegisterForm = {
 
 type Errors = Record<string, string[]>;
 
+type RegisterResponse = {
+    data: {
+        id: number;
+        name: string;
+        email: string;
+    };
+    meta?: {
+        token_type?: string;
+        access_token?: string;
+    };
+};
+
 const step = ref(1);
 const submitting = ref(false);
 const generalError = ref('');
@@ -161,7 +173,16 @@ async function submitForm(): Promise<void> {
             return;
         }
 
-        window.location.href = '/login';
+        const payload = (await response.json()) as RegisterResponse;
+        const accessToken = payload.meta?.access_token;
+
+        if (accessToken) {
+            localStorage.setItem('access_token', accessToken);
+            localStorage.setItem('token_type', payload.meta?.token_type ?? 'Bearer');
+            localStorage.setItem('auth_user', JSON.stringify(payload.data));
+        }
+
+        window.location.href = '/upload';
     } catch {
         generalError.value = 'No pudimos completar el registro. Intenta nuevamente.';
     } finally {

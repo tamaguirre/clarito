@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique();
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('condition_user', function (Blueprint $table) {

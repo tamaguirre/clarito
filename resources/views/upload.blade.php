@@ -2,6 +2,18 @@
 
 @section('title', 'Cargar documento')
 
+@push('scripts')
+<script>
+    (function () {
+        const token = localStorage.getItem('access_token');
+
+        if (!token) {
+            window.location.replace('/login');
+        }
+    })();
+</script>
+@endpush
+
 @section('content')
 <div class="max-w-2xl mx-auto px-4 py-12">
 

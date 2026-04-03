@@ -25,8 +25,15 @@ class RegisterController extends Controller
 
         $user->conditions()->sync($validated['conditions']);
         $user->load(['educationLevel', 'conditions']);
+        $accessToken = $user->createToken('local-web')->accessToken;
 
         return (new UserResource($user))
+            ->additional([
+                'meta' => [
+                    'token_type' => 'Bearer',
+                    'access_token' => $accessToken,
+                ],
+            ])
             ->response()
             ->setStatusCode(201);
     }

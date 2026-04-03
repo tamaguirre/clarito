@@ -16,7 +16,6 @@ class ConditionSeeder extends Seeder
             'Dislexia',
             'TDAH',
             'Discapacidad visual parcial',
-            'Ninguna',
         ];
 
         foreach ($conditions as $name) {
