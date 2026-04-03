@@ -23,8 +23,10 @@
         const titleBox = document.getElementById('resume-document-title');
         const previewBox = document.getElementById('resume-preview');
         const summaryBox = document.getElementById('resume-summary-text');
+        const faqBox = document.getElementById('resume-faq-list');
+        const tagsBox = document.getElementById('resume-tags');
 
-        if (!statusBox || !titleBox || !previewBox || !summaryBox) {
+        if (!statusBox || !titleBox || !previewBox || !summaryBox || !faqBox || !tagsBox) {
             return;
         }
 
@@ -57,11 +59,73 @@
             previewBox.innerHTML = '<p class="text-sm text-gray-500">Tipo de archivo no soportado para vista previa.</p>';
         };
 
+        const escapeHtml = function (value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        };
+
+        const renderSummary = function (summary) {
+            const sections = Array.isArray(summary?.resume) ? summary.resume : [];
+            const faqItems = sections.flatMap(function (item) {
+                return Array.isArray(item?.faq) ? item.faq : [];
+            });
+
+            if (!sections.length) {
+                summaryBox.innerHTML = '<p class="text-sm text-gray-600 leading-relaxed">Resumen pendiente de generación.</p>';
+            } else {
+                summaryBox.innerHTML = sections.map(function (item) {
+                    return '<article class="rounded-xl border border-slate-100 bg-slate-50/70 p-4">'
+                        + '<div class="mb-2 flex items-center gap-2">'
+                        + '<span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-cyan-100 text-xs font-semibold text-cyan-700">' + escapeHtml(item.id) + '</span>'
+                        + '<h3 class="text-sm font-semibold text-slate-800">' + escapeHtml(item.section) + '</h3>'
+                        + '</div>'
+                        + '<p class="text-sm leading-relaxed text-slate-600">' + escapeHtml(item.resume) + '</p>'
+                        + '</article>';
+                }).join('');
+            }
+
+            if (!faqItems.length) {
+                faqBox.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500">No hay preguntas frecuentes disponibles.</div>';
+            } else {
+                faqBox.innerHTML = faqItems.map(function (item) {
+                    return '<details class="group px-4 py-3">'
+                        + '<summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm text-gray-700">'
+                        + '<span>' + escapeHtml(item.question) + '</span>'
+                        + '<svg class="h-4 w-4 shrink-0 text-gray-400 transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                        + '<polyline points="6 9 12 15 18 9"/>'
+                        + '</svg>'
+                        + '</summary>'
+                        + '<p class="pt-3 text-sm leading-relaxed text-gray-500">' + escapeHtml(item.answer) + '</p>'
+                        + '</details>';
+                }).join('');
+            }
+
+        };
+
+        const renderTags = function (tags) {
+            if (!Array.isArray(tags) || !tags.length) {
+                tagsBox.innerHTML = '<span class="text-xs text-gray-500">Sin categorías</span>';
+                return;
+            }
+
+            tagsBox.innerHTML = tags.map(function (tag, index) {
+                const style = index < 2
+                    ? 'background:#e0f7fa; color:#00838f;'
+                    : 'background:#f1f5f9; color:#475569;';
+
+                return '<span class="text-xs font-medium px-3 py-1 rounded-full" style="' + style + '">' + escapeHtml(tag) + '</span>';
+            }).join('');
+        };
+
         const loadUpload = async function () {
             setStatus('Cargando documento...', 'info');
 
             try {
-                const response = await fetch('/api/uploads/' + uploadToken, {
+                const response = await fetch('/api/resumes/' + uploadToken, {
                     headers: {
                         Authorization: tokenType + ' ' + token,
                         Accept: 'application/json',
@@ -91,11 +155,50 @@
 
                 titleBox.textContent = upload.original_name || 'Documento';
                 renderPreview(upload);
-                summaryBox.textContent = 'Resumen pendiente de generación. El documento ya fue cargado correctamente y en el siguiente paso procesaremos su contenido.';
+                await loadResume();
                 statusBox.className = 'hidden';
                 statusBox.textContent = '';
             } catch {
                 setStatus('No se pudo cargar el documento. Intenta nuevamente.', 'error');
+            }
+        };
+
+        const loadResume = async function () {
+            try {
+                const response = await fetch('/api/resumes/' + uploadToken, {
+                    headers: {
+                        Authorization: tokenType + ' ' + token,
+                        Accept: 'application/json',
+                    },
+                });
+
+                if (response.status === 404) {
+                    summaryBox.textContent = 'Resumen pendiente de generación. El documento ya fue cargado correctamente y en el siguiente paso procesaremos su contenido.';
+                    return;
+                }
+
+                if (!response.ok) {
+                    summaryBox.textContent = 'No se pudo cargar el resumen del documento.';
+                    return;
+                }
+
+                const payload = await response.json();
+                const summary = payload?.data?.summary_text;
+                const tags = payload?.data?.tags;
+
+                if (summary && typeof summary === 'object') {
+                    renderSummary(summary);
+                    renderTags(tags);
+                    return;
+                }
+
+                summaryBox.innerHTML = '<p class="text-sm text-gray-600 leading-relaxed">Resumen pendiente de generación. El documento ya fue cargado correctamente y en el siguiente paso procesaremos su contenido.</p>';
+                faqBox.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500">No hay preguntas frecuentes disponibles.</div>';
+                tagsBox.innerHTML = '<span class="text-xs text-gray-500">Sin categorías</span>';
+            } catch {
+                summaryBox.innerHTML = '<p class="text-sm text-gray-600 leading-relaxed">No se pudo cargar el resumen del documento.</p>';
+                faqBox.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500">No hay preguntas frecuentes disponibles.</div>';
+                tagsBox.innerHTML = '<span class="text-xs text-gray-500">Sin categorías</span>';
             }
         };
 
@@ -156,40 +259,26 @@
                         Escuchar
                     </button>
                 </div>
-                <p id="resume-summary-text" class="text-sm text-gray-600 leading-relaxed">
-                    Resumen pendiente de generación.
-                </p>
+                <div id="resume-summary-text" class="space-y-3">
+                    <p class="text-sm text-gray-600 leading-relaxed">
+                        Resumen pendiente de generación.
+                    </p>
+                </div>
             </div>
 
             {{-- FAQ --}}
             <div class="bg-white border border-gray-200 rounded-xl p-5">
                 <h2 class="text-sm font-semibold mb-3" style="color: #0f1f3d;">Preguntas frecuentes</h2>
-                <div class="rounded-lg border border-gray-100 divide-y divide-gray-100 overflow-hidden">
-                    @foreach([
-                        '¿Cuánto debo pagar y cuándo?',
-                        '¿Puedo salir antes del plazo?',
-                        '¿Qué pasa si hay daños?'
-                    ] as $pregunta)
-                    <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer">
-                        <span class="text-sm text-gray-700">{{ $pregunta }}</span>
-                        <svg class="w-4 h-4 text-gray-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"/>
-                        </svg>
-                    </div>
-                    @endforeach
+                <div id="resume-faq-list" class="rounded-lg border border-gray-100 divide-y divide-gray-100 overflow-hidden">
+                    <div class="px-4 py-3 text-sm text-gray-500">No hay preguntas frecuentes disponibles.</div>
                 </div>
             </div>
 
             {{-- Tags --}}
             <div class="bg-white border border-gray-200 rounded-xl p-5">
                 <h2 class="text-sm font-semibold mb-3" style="color: #0f1f3d;">Categorías</h2>
-                <div class="flex flex-wrap gap-2">
-                    @foreach(['Arriendo', 'Contrato', 'Legal', 'Vivienda', '12 meses'] as $tag)
-                        <span class="text-xs font-medium px-3 py-1 rounded-full"
-                            style="{{ $loop->index < 2 ? 'background:#e0f7fa; color:#00838f;' : 'background:#f1f5f9; color:#475569;' }}">
-                            {{ $tag }}
-                        </span>
-                    @endforeach
+                <div id="resume-tags" class="flex flex-wrap gap-2">
+                    <span class="text-xs text-gray-500">Sin categorías</span>
                 </div>
             </div>
 

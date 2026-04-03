@@ -72,7 +72,7 @@
             formData.append('file', file);
 
             try {
-                const response = await fetch('/api/uploads', {
+                const response = await fetch('/api/resumes', {
                     method: 'POST',
                     headers: {
                         Authorization: tokenType + ' ' + token,

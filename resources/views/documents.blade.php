@@ -2,14 +2,167 @@
 
 @section('title', 'Mis documentos')
 
+@push('scripts')
+<script>
+    (function () {
+        const token = localStorage.getItem('access_token');
+        const tokenType = localStorage.getItem('token_type') || 'Bearer';
+        const list = document.getElementById('documents-list');
+        const count = document.getElementById('documents-count');
+        const status = document.getElementById('documents-status');
+
+        if (!token) {
+            window.location.replace('/login');
+            return;
+        }
+
+        if (!list || !count || !status) {
+            return;
+        }
+
+        const escapeHtml = function (value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        };
+
+        const formatDate = function (value) {
+            if (!value) {
+                return 'Sin fecha';
+            }
+
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) {
+                return 'Sin fecha';
+            }
+
+            return date.toLocaleDateString('es-CL', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+            });
+        };
+
+        const detectType = function (mimeType) {
+            if (mimeType === 'application/pdf') {
+                return {
+                    label: 'PDF',
+                    bg: '#fef2f2',
+                    color: '#e53e3e',
+                };
+            }
+
+            return {
+                label: 'IMG',
+                bg: '#f0f9ff',
+                color: '#3182ce',
+            };
+        };
+
+        const renderCard = function (doc) {
+            const type = detectType(doc.mime_type);
+            const tags = Array.isArray(doc.tags) ? doc.tags : [];
+            const tagsHtml = tags.length
+                ? tags.map(function (tag) {
+                    return '<span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background-color: #e0f7fa; color: #00838f;">'
+                        + escapeHtml(tag)
+                        + '</span>';
+                }).join('')
+                : '<span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background-color: #f1f5f9; color: #64748b;">Sin tags</span>';
+
+            return '<div class="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col">'
+                + '<div class="p-4 flex-1">'
+                + '<div class="flex items-start justify-between mb-3">'
+                + '<div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: ' + type.bg + ';">'
+                + '<span class="text-xs font-bold" style="color: ' + type.color + ';">' + type.label + '</span>'
+                + '</div>'
+                + '<span class="text-xs text-gray-400">' + escapeHtml(formatDate(doc.created_at)) + '</span>'
+                + '</div>'
+                + '<p class="text-sm font-medium mb-1 leading-snug" style="color: #0f1f3d;">' + escapeHtml(doc.original_name || 'Documento') + '</p>'
+                + '<p class="text-xs text-gray-400 mb-3 truncate">' + escapeHtml(doc.token || '') + '</p>'
+                + '<div class="flex flex-wrap gap-1">' + tagsHtml + '</div>'
+                + '</div>'
+                + '<div class="border-t border-gray-100 grid grid-cols-1">'
+                + '<a href="/resume/' + encodeURIComponent(doc.token) + '" class="flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium hover:bg-gray-50 transition" style="color: #00838f;">'
+                + '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
+                + 'Ver resumen'
+                + '</a>'
+                + '</div>'
+                + '</div>';
+        };
+
+        const renderEmpty = function () {
+            list.innerHTML = '<div class="col-span-full rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center">'
+                + '<p class="text-sm text-gray-500">Todavía no tienes documentos procesados.</p>'
+                + '</div>';
+        };
+
+        const loadDocuments = async function () {
+            status.className = 'mb-4 rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800';
+            status.textContent = 'Cargando documentos...';
+
+            try {
+                const response = await fetch('/api/resumes', {
+                    headers: {
+                        Authorization: tokenType + ' ' + token,
+                        Accept: 'application/json',
+                    },
+                });
+
+                if (response.status === 401) {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('token_type');
+                    localStorage.removeItem('auth_user');
+                    window.location.replace('/login');
+                    return;
+                }
+
+                if (!response.ok) {
+                    status.className = 'mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700';
+                    status.textContent = 'No se pudieron cargar los documentos.';
+                    return;
+                }
+
+                const payload = await response.json();
+                const documents = Array.isArray(payload?.data) ? payload.data : [];
+
+                count.textContent = documents.length + ' documentos procesados';
+
+                if (!documents.length) {
+                    renderEmpty();
+                } else {
+                    list.innerHTML = documents.map(renderCard).join('');
+                }
+
+                status.className = 'hidden';
+                status.textContent = '';
+            } catch {
+                status.className = 'mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700';
+                status.textContent = 'No se pudieron cargar los documentos. Intenta nuevamente.';
+            }
+        };
+
+        loadDocuments();
+    })();
+</script>
+@endpush
+
 @section('content')
 <div class="max-w-6xl mx-auto px-4 py-10">
+
+    <div id="documents-status" class="mb-4 rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
+        Cargando documentos...
+    </div>
 
     {{-- Cabecera --}}
     <div class="flex items-center justify-between mb-8">
         <div>
             <h1 class="text-xl font-semibold" style="color: #0f1f3d;">Mis documentos</h1>
-            <p class="text-sm text-gray-500 mt-0.5">12 documentos procesados</p>
+            <p id="documents-count" class="text-sm text-gray-500 mt-0.5">0 documentos procesados</p>
         </div>
         <a href="{{ route('upload') }}"
             class="inline-flex items-center gap-2 text-sm font-medium text-white rounded-lg px-4 py-2 transition hover:opacity-90"
@@ -23,118 +176,6 @@
     </div>
 
     {{-- Grid de cards --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-        {{-- Card 1 --}}
-        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col">
-            <div class="p-4 flex-1">
-                <div class="flex items-start justify-between mb-3">
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: #fef2f2;">
-                        <span class="text-xs font-bold" style="color: #e53e3e;">PDF</span>
-                    </div>
-                    <span class="text-xs text-gray-400">01 abr 2025</span>
-                </div>
-                <p class="text-sm font-medium mb-1 leading-snug" style="color: #0f1f3d;">Contrato de arriendo</p>
-                <p class="text-xs text-gray-400 mb-3 truncate">contrato_arriendo.pdf</p>
-                <div class="flex flex-wrap gap-1">
-                    <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background-color: #e0f7fa; color: #00838f;">Arriendo</span>
-                    <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background-color: #e0f7fa; color: #00838f;">Legal</span>
-                </div>
-            </div>
-            <div class="border-t border-gray-100 grid grid-cols-2">
-                <a href="#" class="flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium border-r border-gray-100 hover:bg-gray-50 transition" style="color: #00838f;">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    Ver resumen
-                </a>
-                <button class="flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium hover:bg-red-50 transition" style="color: #ef4444;">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-                    Eliminar
-                </button>
-            </div>
-        </div>
-
-        {{-- Card 2 --}}
-        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col">
-            <div class="p-4 flex-1">
-                <div class="flex items-start justify-between mb-3">
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: #fef2f2;">
-                        <span class="text-xs font-bold" style="color: #e53e3e;">PDF</span>
-                    </div>
-                    <span class="text-xs text-gray-400">28 mar 2025</span>
-                </div>
-                <p class="text-sm font-medium mb-1 leading-snug" style="color: #0f1f3d;">Informe médico anual</p>
-                <p class="text-xs text-gray-400 mb-3 truncate">informe_medico.pdf</p>
-                <div class="flex flex-wrap gap-1">
-                    <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background-color: #e0f7fa; color: #00838f;">Salud</span>
-                </div>
-            </div>
-            <div class="border-t border-gray-100 grid grid-cols-2">
-                <a href="#" class="flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium border-r border-gray-100 hover:bg-gray-50 transition" style="color: #00838f;">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    Ver resumen
-                </a>
-                <button class="flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium hover:bg-red-50 transition" style="color: #ef4444;">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-                    Eliminar
-                </button>
-            </div>
-        </div>
-
-        {{-- Card 3 --}}
-        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col">
-            <div class="p-4 flex-1">
-                <div class="flex items-start justify-between mb-3">
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: #f0f9ff;">
-                        <span class="text-xs font-bold" style="color: #3182ce;">IMG</span>
-                    </div>
-                    <span class="text-xs text-gray-400">20 mar 2025</span>
-                </div>
-                <p class="text-sm font-medium mb-1 leading-snug" style="color: #0f1f3d;">Contrato de trabajo</p>
-                <p class="text-xs text-gray-400 mb-3 truncate">contrato_trabajo.jpg</p>
-                <div class="flex flex-wrap gap-1">
-                    <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background-color: #e0f7fa; color: #00838f;">Laboral</span>
-                </div>
-            </div>
-            <div class="border-t border-gray-100 grid grid-cols-2">
-                <a href="#" class="flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium border-r border-gray-100 hover:bg-gray-50 transition" style="color: #00838f;">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    Ver resumen
-                </a>
-                <button class="flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium hover:bg-red-50 transition" style="color: #ef4444;">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-                    Eliminar
-                </button>
-            </div>
-        </div>
-
-        {{-- Card 4 --}}
-        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col">
-            <div class="p-4 flex-1">
-                <div class="flex items-start justify-between mb-3">
-                    <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: #fef2f2;">
-                        <span class="text-xs font-bold" style="color: #e53e3e;">PDF</span>
-                    </div>
-                    <span class="text-xs text-gray-400">15 mar 2025</span>
-                </div>
-                <p class="text-sm font-medium mb-1 leading-snug" style="color: #0f1f3d;">Escritura de propiedad</p>
-                <p class="text-xs text-gray-400 mb-3 truncate">escritura_propiedad.pdf</p>
-                <div class="flex flex-wrap gap-1">
-                    <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background-color: #e0f7fa; color: #00838f;">Legal</span>
-                    <span class="text-xs px-2 py-0.5 rounded-full font-medium" style="background-color: #e0f7fa; color: #00838f;">Vivienda</span>
-                </div>
-            </div>
-            <div class="border-t border-gray-100 grid grid-cols-2">
-                <a href="#" class="flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium border-r border-gray-100 hover:bg-gray-50 transition" style="color: #00838f;">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    Ver resumen
-                </a>
-                <button class="flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium hover:bg-red-50 transition" style="color: #ef4444;">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-                    Eliminar
-                </button>
-            </div>
-        </div>
-
-    </div>
+    <div id="documents-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
 </div>
 @endsection

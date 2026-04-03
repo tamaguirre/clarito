@@ -44,8 +44,8 @@ class User extends Authenticatable
         return $this->belongsToMany(Condition::class);
     }
 
-    public function uploads(): HasMany
+    public function resumes(): HasMany
     {
-        return $this->hasMany(Upload::class);
+        return $this->hasMany(Resume::class);
     }
 }
