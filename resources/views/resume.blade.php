@@ -2,8 +2,113 @@
 
 @section('title', 'Resumen del documento')
 
+@push('scripts')
+<script>
+    (function () {
+        const token = localStorage.getItem('access_token');
+        const tokenType = localStorage.getItem('token_type') || 'Bearer';
+        const uploadToken = @json($uploadToken ?? null);
+
+        if (!token) {
+            window.location.replace('/login');
+            return;
+        }
+
+        if (!uploadToken) {
+            window.location.replace('/upload');
+            return;
+        }
+
+        const statusBox = document.getElementById('resume-status');
+        const titleBox = document.getElementById('resume-document-title');
+        const previewBox = document.getElementById('resume-preview');
+        const summaryBox = document.getElementById('resume-summary-text');
+
+        if (!statusBox || !titleBox || !previewBox || !summaryBox) {
+            return;
+        }
+
+        const setStatus = function (message, type) {
+            const classes = {
+                info: 'mb-4 rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800',
+                error: 'mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700',
+            };
+
+            statusBox.className = classes[type] || classes.info;
+            statusBox.textContent = message;
+        };
+
+        const renderPreview = function (upload) {
+            if (!upload.file_url || !upload.mime_type) {
+                previewBox.innerHTML = '<p class="text-sm text-gray-500">No se pudo cargar la vista previa.</p>';
+                return;
+            }
+
+            if (upload.mime_type === 'application/pdf') {
+                previewBox.innerHTML = '<iframe src="' + upload.file_url + '" class="h-[520px] w-full rounded-lg border border-gray-100" title="Vista previa del PDF"></iframe>';
+                return;
+            }
+
+            if (upload.mime_type.startsWith('image/')) {
+                previewBox.innerHTML = '<img src="' + upload.file_url + '" alt="Documento cargado" class="mx-auto max-h-[520px] rounded-lg border border-gray-100 object-contain">';
+                return;
+            }
+
+            previewBox.innerHTML = '<p class="text-sm text-gray-500">Tipo de archivo no soportado para vista previa.</p>';
+        };
+
+        const loadUpload = async function () {
+            setStatus('Cargando documento...', 'info');
+
+            try {
+                const response = await fetch('/api/uploads/' + uploadToken, {
+                    headers: {
+                        Authorization: tokenType + ' ' + token,
+                        Accept: 'application/json',
+                    },
+                });
+
+                if (response.status === 401) {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('token_type');
+                    localStorage.removeItem('auth_user');
+                    window.location.replace('/login');
+                    return;
+                }
+
+                if (!response.ok) {
+                    setStatus('No se pudo cargar el documento.', 'error');
+                    return;
+                }
+
+                const payload = await response.json();
+                const upload = payload?.data;
+
+                if (!upload) {
+                    setStatus('No se encontró información del documento.', 'error');
+                    return;
+                }
+
+                titleBox.textContent = upload.original_name || 'Documento';
+                renderPreview(upload);
+                summaryBox.textContent = 'Resumen pendiente de generación. El documento ya fue cargado correctamente y en el siguiente paso procesaremos su contenido.';
+                statusBox.className = 'hidden';
+                statusBox.textContent = '';
+            } catch {
+                setStatus('No se pudo cargar el documento. Intenta nuevamente.', 'error');
+            }
+        };
+
+        loadUpload();
+    })();
+</script>
+@endpush
+
 @section('content')
 <div class="max-w-6xl mx-auto px-4 py-8">
+    <div id="resume-status" class="mb-4 rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
+        Cargando documento...
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
 
@@ -16,19 +121,14 @@
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <polyline points="14 2 14 8 20 8"/>
                 </svg>
-                <span class="text-xs font-medium text-gray-500 truncate">
-                    {{-- {{ $documento->nombre }} --}}
-                    contrato_arriendo.pdf
+                <span id="resume-document-title" class="text-xs font-medium text-gray-500 truncate">
+                    Documento
                 </span>
             </div>
 
-            {{-- Preview del PDF (placeholder) --}}
-            <div class="p-4 min-h-80 space-y-2">
-                @foreach(range(1, 12) as $i)
-                    <div class="h-2.5 rounded-full bg-gray-100"
-                        style="width: {{ [100, 85, 92, 78, 100, 88, 70, 100, 95, 60, 100, 82][$i-1] }}%">
-                    </div>
-                @endforeach
+            {{-- Preview del documento --}}
+            <div id="resume-preview" class="p-4 min-h-80 space-y-2">
+                <p class="text-sm text-gray-500">Preparando vista previa...</p>
             </div>
 
             {{-- Paginación --}}
@@ -56,9 +156,8 @@
                         Escuchar
                     </button>
                 </div>
-                <p class="text-sm text-gray-600 leading-relaxed">
-                    {{-- {{ $resumen }} --}}
-                    Este contrato de arriendo establece un acuerdo entre el propietario y el arrendatario por un período de 12 meses. El arriendo mensual es de $450.000 con vencimiento el día 5 de cada mes. El arrendatario debe mantener la propiedad en buen estado y no puede subarrendar sin autorización escrita.
+                <p id="resume-summary-text" class="text-sm text-gray-600 leading-relaxed">
+                    Resumen pendiente de generación.
                 </p>
             </div>
 
