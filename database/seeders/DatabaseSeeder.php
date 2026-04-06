@@ -17,6 +17,11 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleSeeder::class,
             CompanyTypeSeeder::class,
+            EnvironmentSeeder::class,
+            ActionTypeSeeder::class,
+            AccessMethodSeeder::class,
+            AiToneSeeder::class,
+            CompanyConfigTypeSeeder::class,
             EducationLevelSeeder::class,
             ConditionSeeder::class,
         ]);
@@ -25,10 +30,21 @@ class DatabaseSeeder extends Seeder
 
         $userRole = Role::query()->where('name', 'user')->first();
 
-        User::factory()->create([
-            'name' => 'Test User',
+        $testUser = User::query()->withTrashed()->firstOrNew([
             'email' => 'test@example.com',
-            'role_id' => $userRole?->id,
         ]);
+
+        $testUser->name = 'Test User';
+        $testUser->role_id = $userRole?->id;
+
+        if (! $testUser->exists) {
+            $testUser->password = 'password';
+        }
+
+        $testUser->save();
+
+        if ($testUser->trashed()) {
+            $testUser->restore();
+        }
     }
 }

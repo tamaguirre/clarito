@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\CompanyRegistrationController;
+use App\Http\Controllers\Api\CompanySettingsController;
 use App\Http\Controllers\Api\ConditionController;
 use App\Http\Controllers\Api\EducationLevelController;
 use App\Http\Controllers\Api\ResumeController;
@@ -33,4 +34,15 @@ Route::middleware(['auth:api', 'admin'])->prefix('admin')->group(function () {
     Route::post('/companies', [CompanyController::class, 'store'])->name('api.admin.companies.store');
     Route::patch('/companies/{company}', [CompanyController::class, 'update'])->name('api.admin.companies.update');
     Route::delete('/companies/{company}', [CompanyController::class, 'destroy'])->name('api.admin.companies.destroy');
+});
+
+Route::middleware(['auth:api', 'company'])->prefix('company')->group(function () {
+    Route::get('/catalogs', [CompanySettingsController::class, 'catalogs'])->name('api.company.catalogs');
+
+    Route::get('/configs/{environment}', [CompanySettingsController::class, 'show'])->name('api.company.configs.show');
+    Route::put('/configs/{environment}', [CompanySettingsController::class, 'update'])->name('api.company.configs.update');
+
+    Route::get('/webhooks/{environment}', [CompanySettingsController::class, 'webhooks'])->name('api.company.webhooks.index');
+    Route::post('/webhooks/{environment}', [CompanySettingsController::class, 'storeWebhook'])->name('api.company.webhooks.store');
+    Route::delete('/webhooks/{environment}/{webhook}', [CompanySettingsController::class, 'destroyWebhook'])->name('api.company.webhooks.destroy');
 });
