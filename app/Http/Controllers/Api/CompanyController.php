@@ -4,11 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CompanyResource;
+use App\Mail\CompanyRegistrationInvitationMail;
 use App\Models\Company;
+use App\Models\CompanyInvitation;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class CompanyController extends Controller
@@ -17,22 +22,38 @@ class CompanyController extends Controller
     {
         return CompanyResource::collection(
             Company::query()
+                ->with('companyType')
                 ->orderBy('name')
                 ->get()
         );
     }
 
-    public function store(Request $request): CompanyResource
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:companies,name'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'email' => ['required', 'email', 'max:255'],
         ]);
 
         $company = Company::create($validated);
 
-        return new CompanyResource($company);
+        $invitation = CompanyInvitation::create([
+            'company_id' => $company->id,
+            'token' => Str::random(64),
+            'expires_at' => now()->addDays(7),
+        ]);
+
+        Mail::to($company->email)->send(new CompanyRegistrationInvitationMail($invitation->load('company')));
+
+        return (new CompanyResource($company))
+            ->additional([
+                'meta' => [
+                    'invitation_sent' => true,
+                    'invitation_expires_at' => $invitation->expires_at,
+                ],
+            ])
+            ->response()
+            ->setStatusCode(201);
     }
 
     public function update(Request $request, Company $company): CompanyResource

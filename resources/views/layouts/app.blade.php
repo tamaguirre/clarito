@@ -18,7 +18,7 @@
             <div class="flex items-center justify-between h-16">
 
                 {{-- Logo --}}
-                <a href="{{ route('documents') }}" class="flex items-center shrink-0">
+                <a id="menu-logo-link" href="{{ route('documents') }}" class="flex items-center shrink-0">
                     <img src="{{ asset('img/logo.png') }}" alt="Clarito" class="h-18 w-auto">
                 </a>
 
@@ -39,14 +39,16 @@
                         <div id="menu-dropdown-panel"
                             class="hidden absolute right-0 mt-2 w-52 bg-white rounded-xl border border-gray-100 py-1 z-50"
                             style="display: none;">
-                            <a href="{{ route('documents') }}"
-                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                Mis documentos
-                            </a>
-                            <a href="{{ route('upload') }}"
-                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                Nuevo Documento
-                            </a>
+                            <div id="menu-main-links">
+                                <a href="{{ route('documents') }}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    Mis documentos
+                                </a>
+                                <a href="{{ route('upload') }}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    Nuevo Documento
+                                </a>
+                            </div>
                             <div id="menu-admin-links" class="hidden">
                                 <div class="border-t border-gray-100 my-1"></div>
                                 <a href="{{ route('admin.users') }}"
@@ -58,7 +60,7 @@
                                     Admin Empresas
                                 </a>
                             </div>
-                            <div class="border-t border-gray-100 my-1"></div>
+                            <div id="menu-divider-before-logout" class="border-t border-gray-100 my-1"></div>
                             <button id="menu-logout-button" type="button"
                                 class="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50">
                                 Cerrar sesión
@@ -91,7 +93,10 @@
             const dropdownRoot = document.getElementById('menu-dropdown-root');
             const dropdownToggle = document.getElementById('menu-dropdown-toggle');
             const dropdownPanel = document.getElementById('menu-dropdown-panel');
+            const logoLink = document.getElementById('menu-logo-link');
+            const mainLinks = document.getElementById('menu-main-links');
             const adminLinks = document.getElementById('menu-admin-links');
+            const dividerBeforeLogout = document.getElementById('menu-divider-before-logout');
 
             if (!nameElement || !initialsElement) {
                 return;
@@ -125,6 +130,24 @@
 
                 if (adminLinks && roleName === 'admin') {
                     adminLinks.classList.remove('hidden');
+                }
+
+                if (roleName === 'company') {
+                    if (mainLinks) {
+                        mainLinks.classList.add('hidden');
+                    }
+
+                    if (adminLinks) {
+                        adminLinks.classList.add('hidden');
+                    }
+
+                    if (dividerBeforeLogout) {
+                        dividerBeforeLogout.classList.add('hidden');
+                    }
+
+                    if (logoLink instanceof HTMLAnchorElement) {
+                        logoLink.href = '/company/home';
+                    }
                 }
             } catch {
                 // Keep fallback values when local storage data is not valid.

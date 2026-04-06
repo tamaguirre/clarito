@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\CompanyController;
+use App\Http\Controllers\Api\CompanyRegistrationController;
 use App\Http\Controllers\Api\ConditionController;
 use App\Http\Controllers\Api\EducationLevelController;
 use App\Http\Controllers\Api\ResumeController;
@@ -13,6 +14,8 @@ Route::post('/login', LoginController::class)->name('api.login');
 Route::post('/register', RegisterController::class)->name('api.register');
 Route::get('/education-levels', [EducationLevelController::class, 'index'])->name('api.education-levels.index');
 Route::get('/conditions', [ConditionController::class, 'index'])->name('api.conditions.index');
+Route::get('/company-registrations/{token}', [CompanyRegistrationController::class, 'show'])->name('api.company-registrations.show');
+Route::post('/company-registrations/{token}/complete', [CompanyRegistrationController::class, 'complete'])->name('api.company-registrations.complete');
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/resumes', [ResumeController::class, 'index'])->name('api.resumes.index');

@@ -92,10 +92,25 @@
     <script>
     (function () {
         const existingToken = localStorage.getItem('access_token');
+        const rawUser = localStorage.getItem('auth_user');
+
+        const resolveHomeByRole = function (user) {
+            if (user?.role?.name === 'company') {
+                return '/company/home';
+            }
+
+            return '/upload';
+        };
 
         if (existingToken) {
-            window.location.replace('/upload');
-            return;
+            try {
+                const parsedUser = rawUser ? JSON.parse(rawUser) : null;
+                window.location.replace(resolveHomeByRole(parsedUser));
+                return;
+            } catch {
+                window.location.replace('/upload');
+                return;
+            }
         }
 
         const form = document.getElementById('login-form');
@@ -182,7 +197,7 @@
                     localStorage.setItem('auth_user', JSON.stringify(authUser));
                 }
 
-                window.location.replace('/upload');
+                window.location.replace(resolveHomeByRole(authUser));
             } catch {
                 generalError.textContent = 'No pudimos iniciar sesión. Intenta nuevamente.';
                 generalError.classList.remove('hidden');

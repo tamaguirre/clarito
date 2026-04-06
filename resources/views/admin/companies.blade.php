@@ -161,7 +161,6 @@
                 body: JSON.stringify({
                     name: formData.get('name'),
                     email: formData.get('email') || null,
-                    phone: formData.get('phone') || null,
                 }),
             });
 
@@ -206,12 +205,10 @@
 
     <div class="mb-6 rounded-xl border border-gray-200 bg-white p-5">
         <h2 class="mb-4 text-sm font-semibold" style="color:#0f1f3d;">Nueva empresa</h2>
-        <form id="admin-company-form" class="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <form id="admin-company-form" class="grid grid-cols-1 gap-3 md:grid-cols-3">
             <input type="text" name="name" required placeholder="Nombre"
                 class="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-100">
-            <input type="email" name="email" placeholder="Email"
-                class="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-100">
-            <input type="text" name="phone" placeholder="Teléfono"
+            <input type="email" name="email" required placeholder="Email"
                 class="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-100">
             <button type="submit"
                 class="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-medium text-white hover:opacity-90">

@@ -12,3 +12,7 @@ Route::view('/documents', 'documents')->name('documents');
 Route::view('/profile', 'profile')->name('profile');
 Route::view('/admin/users', 'admin.users')->name('admin.users');
 Route::view('/admin/companies', 'admin.companies')->name('admin.companies');
+Route::get('/company/complete-registration/{token}', function (string $token) {
+    return view('company-complete-registration', ['token' => $token]);
+})->name('company.complete-registration');
+Route::view('/company/home', 'company-home')->name('company.home');
