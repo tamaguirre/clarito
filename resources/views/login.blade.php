@@ -61,9 +61,16 @@
                             </a>
                         @endif
                     </div>
-                    <input id="password" type="password" name="password" required
-                        placeholder="Tu contraseña"
-                        class="w-full px-4 py-2.5 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 transition focus:ring-cyan-200 focus:border-cyan-400">
+                    <div class="relative">
+                        <input id="password" type="password" name="password" required
+                            placeholder="Tu contraseña"
+                            class="w-full px-4 py-2.5 pr-20 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 transition focus:ring-cyan-200 focus:border-cyan-400">
+                        <button type="button"
+                            data-password-toggle="password"
+                            class="absolute inset-y-0 right-2 my-auto h-8 rounded-md px-2.5 text-xs font-medium text-cyan-700 hover:bg-cyan-50">
+                            Mostrar
+                        </button>
+                    </div>
                     <p id="login-password-error" class="mt-1 hidden text-xs text-red-500"></p>
                 </div>
 
@@ -120,10 +127,31 @@
         const generalError = document.getElementById('login-general-error');
         const emailError = document.getElementById('login-email-error');
         const passwordError = document.getElementById('login-password-error');
+        const toggleButtons = Array.from(document.querySelectorAll('[data-password-toggle]'));
 
         if (!form || !emailInput || !passwordInput || !submitButton || !generalError || !emailError || !passwordError) {
             return;
         }
+
+        toggleButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                const targetId = button.getAttribute('data-password-toggle');
+
+                if (!targetId) {
+                    return;
+                }
+
+                const targetInput = document.getElementById(targetId);
+
+                if (!(targetInput instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                const showing = targetInput.type === 'text';
+                targetInput.type = showing ? 'password' : 'text';
+                button.textContent = showing ? 'Mostrar' : 'Ocultar';
+            });
+        });
 
         const clearErrors = () => {
             generalError.classList.add('hidden');

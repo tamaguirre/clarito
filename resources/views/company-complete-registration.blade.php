@@ -50,13 +50,27 @@
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                     <label for="password" class="mb-1.5 block text-xs font-medium text-gray-500">Contraseña</label>
-                    <input id="password" name="password" type="password" required minlength="8"
-                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-100">
+                    <div class="relative">
+                        <input id="password" name="password" type="password" required minlength="8"
+                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 pr-20 text-sm focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-100">
+                        <button type="button"
+                            data-password-toggle="password"
+                            class="absolute inset-y-0 right-2 my-auto h-8 rounded-md px-2.5 text-xs font-medium text-cyan-700 hover:bg-cyan-50">
+                            Mostrar
+                        </button>
+                    </div>
                 </div>
                 <div>
                     <label for="password_confirmation" class="mb-1.5 block text-xs font-medium text-gray-500">Confirmar contraseña</label>
-                    <input id="password_confirmation" name="password_confirmation" type="password" required minlength="8"
-                        class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-100">
+                    <div class="relative">
+                        <input id="password_confirmation" name="password_confirmation" type="password" required minlength="8"
+                            class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 pr-20 text-sm focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-100">
+                        <button type="button"
+                            data-password-toggle="password_confirmation"
+                            class="absolute inset-y-0 right-2 my-auto h-8 rounded-md px-2.5 text-xs font-medium text-cyan-700 hover:bg-cyan-50">
+                            Mostrar
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -91,10 +105,31 @@
         const companyTypeSelect = document.getElementById('company_type_id');
         const dictionaryList = document.getElementById('dictionary-list');
         const addDictionaryRowButton = document.getElementById('add-dictionary-row');
+        const toggleButtons = Array.from(document.querySelectorAll('[data-password-toggle]'));
 
         if (!statusBox || !form || !companyNameInput || !companyEmailInput || !companyTypeSelect || !dictionaryList || !addDictionaryRowButton) {
             return;
         }
+
+        toggleButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                const targetId = button.getAttribute('data-password-toggle');
+
+                if (!targetId) {
+                    return;
+                }
+
+                const targetInput = document.getElementById(targetId);
+
+                if (!(targetInput instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                const showing = targetInput.type === 'text';
+                targetInput.type = showing ? 'password' : 'text';
+                button.textContent = showing ? 'Mostrar' : 'Ocultar';
+            });
+        });
 
         const setStatus = function (message, type) {
             const classes = {

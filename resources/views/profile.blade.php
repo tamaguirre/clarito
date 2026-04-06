@@ -73,29 +73,50 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 <div>
                     <label for="current_password" class="block text-xs font-medium text-gray-500 mb-1.5">Contraseña actual</label>
-                    <input id="current_password" type="password" name="current_password"
-                        class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 transition
-                            @error('current_password') border-red-400 @enderror"
-                        placeholder="••••••••">
+                    <div class="relative">
+                        <input id="current_password" type="password" name="current_password"
+                            class="w-full px-3 py-2 pr-20 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 transition
+                                @error('current_password') border-red-400 @enderror"
+                            placeholder="••••••••">
+                        <button type="button"
+                            data-password-toggle="current_password"
+                            class="absolute inset-y-0 right-2 my-auto h-8 rounded-md px-2.5 text-xs font-medium text-cyan-700 hover:bg-cyan-50">
+                            Mostrar
+                        </button>
+                    </div>
                     @error('current_password')
                         <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                     @enderror
                 </div>
                 <div>
                     <label for="password" class="block text-xs font-medium text-gray-500 mb-1.5">Nueva contraseña</label>
-                    <input id="password" type="password" name="password"
-                        class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 transition
-                            @error('password') border-red-400 @enderror"
-                        placeholder="••••••••">
+                    <div class="relative">
+                        <input id="password" type="password" name="password"
+                            class="w-full px-3 py-2 pr-20 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 transition
+                                @error('password') border-red-400 @enderror"
+                            placeholder="••••••••">
+                        <button type="button"
+                            data-password-toggle="password"
+                            class="absolute inset-y-0 right-2 my-auto h-8 rounded-md px-2.5 text-xs font-medium text-cyan-700 hover:bg-cyan-50">
+                            Mostrar
+                        </button>
+                    </div>
                     @error('password')
                         <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                     @enderror
                 </div>
                 <div>
                     <label for="password_confirmation" class="block text-xs font-medium text-gray-500 mb-1.5">Confirmar</label>
-                    <input id="password_confirmation" type="password" name="password_confirmation"
-                        class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 transition"
-                        placeholder="••••••••">
+                    <div class="relative">
+                        <input id="password_confirmation" type="password" name="password_confirmation"
+                            class="w-full px-3 py-2 pr-20 text-sm rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-cyan-200 focus:border-cyan-400 transition"
+                            placeholder="••••••••">
+                        <button type="button"
+                            data-password-toggle="password_confirmation"
+                            class="absolute inset-y-0 right-2 my-auto h-8 rounded-md px-2.5 text-xs font-medium text-cyan-700 hover:bg-cyan-50">
+                            Mostrar
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -156,3 +177,31 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        const toggleButtons = Array.from(document.querySelectorAll('[data-password-toggle]'));
+
+        toggleButtons.forEach(function (button) {
+            button.addEventListener('click', function () {
+                const targetId = button.getAttribute('data-password-toggle');
+
+                if (!targetId) {
+                    return;
+                }
+
+                const targetInput = document.getElementById(targetId);
+
+                if (!(targetInput instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                const showing = targetInput.type === 'text';
+                targetInput.type = showing ? 'password' : 'text';
+                button.textContent = showing ? 'Mostrar' : 'Ocultar';
+            });
+        });
+    })();
+</script>
+@endpush
