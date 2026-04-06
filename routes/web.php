@@ -10,3 +10,5 @@ Route::get('/resume/{token}', function (string $token) {
 })->name('resume');
 Route::view('/documents', 'documents')->name('documents');
 Route::view('/profile', 'profile')->name('profile');
+Route::view('/admin/users', 'admin.users')->name('admin.users');
+Route::view('/admin/companies', 'admin.companies')->name('admin.companies');

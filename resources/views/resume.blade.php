@@ -3,6 +3,21 @@
 @section('title', 'Resumen del documento')
 
 @push('scripts')
+<style>
+    .is-large-reading .resume-section-title,
+    .is-large-reading .resume-faq-question,
+    .is-large-reading .resume-block-title {
+        font-size: 1.2rem;
+        line-height: 1.85rem;
+    }
+
+    .is-large-reading .resume-section-body,
+    .is-large-reading .resume-faq-answer,
+    .is-large-reading .resume-empty-text {
+        font-size: 1.15rem;
+        line-height: 2rem;
+    }
+</style>
 <script>
     (function () {
         const token = localStorage.getItem('access_token');
@@ -25,10 +40,31 @@
         const summaryBox = document.getElementById('resume-summary-text');
         const faqBox = document.getElementById('resume-faq-list');
         const tagsBox = document.getElementById('resume-tags');
+        const readingPanel = document.getElementById('resume-reading-panel');
+        const fontToggleButton = document.getElementById('resume-font-toggle');
 
-        if (!statusBox || !titleBox || !previewBox || !summaryBox || !faqBox || !tagsBox) {
+        if (!statusBox || !titleBox || !previewBox || !summaryBox || !faqBox || !tagsBox || !readingPanel || !fontToggleButton) {
             return;
         }
+
+        const applyReadingSize = function (isLarge) {
+            readingPanel.classList.toggle('is-large-reading', isLarge);
+            fontToggleButton.textContent = isLarge ? 'A-' : 'A+';
+            fontToggleButton.setAttribute('aria-label', isLarge ? 'Reducir tamaño de letra' : 'Aumentar tamaño de letra');
+        };
+
+        const savedReadingSize = localStorage.getItem('resume_reading_size') === 'large';
+        applyReadingSize(savedReadingSize);
+
+        fontToggleButton.addEventListener('click', function () {
+            const willBeLarge = !readingPanel.classList.contains('is-large-reading');
+            localStorage.setItem('resume_reading_size', willBeLarge ? 'large' : 'normal');
+            applyReadingSize(willBeLarge);
+        });
+
+        previewBox.addEventListener('contextmenu', function (event) {
+            event.preventDefault();
+        });
 
         const setStatus = function (message, type) {
             const classes = {
@@ -47,12 +83,13 @@
             }
 
             if (upload.mime_type === 'application/pdf') {
-                previewBox.innerHTML = '<iframe src="' + upload.file_url + '" class="h-[520px] w-full rounded-lg border border-gray-100" title="Vista previa del PDF"></iframe>';
+                const pdfViewerUrl = upload.file_url + '#toolbar=0&navpanes=0&scrollbar=1&view=FitH';
+                previewBox.innerHTML = '<iframe src="' + pdfViewerUrl + '" class="h-[58vh] min-h-[460px] w-full rounded-lg border border-gray-100 bg-white" title="Vista previa del PDF" loading="lazy" referrerpolicy="no-referrer"></iframe>';
                 return;
             }
 
             if (upload.mime_type.startsWith('image/')) {
-                previewBox.innerHTML = '<img src="' + upload.file_url + '" alt="Documento cargado" class="mx-auto max-h-[520px] rounded-lg border border-gray-100 object-contain">';
+                previewBox.innerHTML = '<img src="' + upload.file_url + '" alt="Documento cargado" class="mx-auto max-h-[58vh] min-h-[460px] w-full rounded-lg border border-gray-100 object-contain bg-white">';
                 return;
             }
 
@@ -75,31 +112,31 @@
             });
 
             if (!sections.length) {
-                summaryBox.innerHTML = '<p class="text-sm text-gray-600 leading-relaxed">Resumen pendiente de generación.</p>';
+                summaryBox.innerHTML = '<p class="resume-empty-text text-base text-gray-700 leading-7">Resumen pendiente de generación.</p>';
             } else {
                 summaryBox.innerHTML = sections.map(function (item) {
                     return '<article class="rounded-xl border border-slate-100 bg-slate-50/70 p-4">'
                         + '<div class="mb-2 flex items-center gap-2">'
                         + '<span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-cyan-100 text-xs font-semibold text-cyan-700">' + escapeHtml(item.id) + '</span>'
-                        + '<h3 class="text-sm font-semibold text-slate-800">' + escapeHtml(item.section) + '</h3>'
+                        + '<h3 class="resume-section-title text-base font-semibold text-slate-800">' + escapeHtml(item.section) + '</h3>'
                         + '</div>'
-                        + '<p class="text-sm leading-relaxed text-slate-600">' + escapeHtml(item.resume) + '</p>'
+                        + '<p class="resume-section-body text-base leading-7 text-slate-700">' + escapeHtml(item.resume) + '</p>'
                         + '</article>';
                 }).join('');
             }
 
             if (!faqItems.length) {
-                faqBox.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500">No hay preguntas frecuentes disponibles.</div>';
+                faqBox.innerHTML = '<div class="resume-empty-text px-4 py-3 text-base text-gray-600">No hay preguntas frecuentes disponibles.</div>';
             } else {
                 faqBox.innerHTML = faqItems.map(function (item) {
                     return '<details class="group px-4 py-3">'
-                        + '<summary class="flex cursor-pointer list-none items-center justify-between gap-3 text-sm text-gray-700">'
-                        + '<span>' + escapeHtml(item.question) + '</span>'
+                        + '<summary class="resume-faq-question flex cursor-pointer list-none items-center justify-between gap-3 text-base text-gray-800">'
+                        + '<span class="resume-faq-question">' + escapeHtml(item.question) + '</span>'
                         + '<svg class="h-4 w-4 shrink-0 text-gray-400 transition group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
                         + '<polyline points="6 9 12 15 18 9"/>'
                         + '</svg>'
                         + '</summary>'
-                        + '<p class="pt-3 text-sm leading-relaxed text-gray-500">' + escapeHtml(item.answer) + '</p>'
+                        + '<p class="resume-faq-answer pt-3 text-base leading-7 text-gray-600">' + escapeHtml(item.answer) + '</p>'
                         + '</details>';
                 }).join('');
             }
@@ -192,12 +229,12 @@
                     return;
                 }
 
-                summaryBox.innerHTML = '<p class="text-sm text-gray-600 leading-relaxed">Resumen pendiente de generación. El documento ya fue cargado correctamente y en el siguiente paso procesaremos su contenido.</p>';
-                faqBox.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500">No hay preguntas frecuentes disponibles.</div>';
+                summaryBox.innerHTML = '<p class="resume-empty-text text-base text-gray-700 leading-7">Resumen pendiente de generación. El documento ya fue cargado correctamente y en el siguiente paso procesaremos su contenido.</p>';
+                faqBox.innerHTML = '<div class="resume-empty-text px-4 py-3 text-base text-gray-600">No hay preguntas frecuentes disponibles.</div>';
                 tagsBox.innerHTML = '<span class="text-xs text-gray-500">Sin categorías</span>';
             } catch {
-                summaryBox.innerHTML = '<p class="text-sm text-gray-600 leading-relaxed">No se pudo cargar el resumen del documento.</p>';
-                faqBox.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500">No hay preguntas frecuentes disponibles.</div>';
+                summaryBox.innerHTML = '<p class="resume-empty-text text-base text-gray-700 leading-7">No se pudo cargar el resumen del documento.</p>';
+                faqBox.innerHTML = '<div class="resume-empty-text px-4 py-3 text-base text-gray-600">No hay preguntas frecuentes disponibles.</div>';
                 tagsBox.innerHTML = '<span class="text-xs text-gray-500">Sin categorías</span>';
             }
         };
@@ -213,10 +250,10 @@
         Cargando documento...
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
         {{-- Vista previa del documento --}}
-        <div class="lg:col-span-2 bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <div class="lg:col-span-6 lg:sticky lg:top-24 bg-white border border-gray-200 rounded-xl overflow-hidden">
 
             {{-- Header --}}
             <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
@@ -230,25 +267,24 @@
             </div>
 
             {{-- Preview del documento --}}
-            <div id="resume-preview" class="p-4 min-h-80 space-y-2">
+            <div id="resume-preview" class="p-2 lg:p-3 min-h-[460px] space-y-2 bg-slate-50">
                 <p class="text-sm text-gray-500">Preparando vista previa...</p>
             </div>
 
-            {{-- Paginación --}}
-            <div class="flex justify-center items-center gap-1.5 px-4 py-3 border-t border-gray-100">
-                <div class="w-2 h-2 rounded-full" style="background-color: #00bcd4;"></div>
-                <div class="w-2 h-2 rounded-full bg-gray-200"></div>
-                <div class="w-2 h-2 rounded-full bg-gray-200"></div>
-            </div>
         </div>
 
         {{-- Panel derecho --}}
-        <div class="lg:col-span-3 flex flex-col gap-4">
+        <div id="resume-reading-panel" class="lg:col-span-6 flex flex-col gap-4">
 
             {{-- Resumen + audio --}}
             <div class="bg-white border border-gray-200 rounded-xl p-5">
                 <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-sm font-semibold" style="color: #0f1f3d;">Resumen</h2>
+                    <h2 class="resume-block-title text-base font-semibold" style="color: #0f1f3d;">Resumen</h2>
+                    <div class="flex items-center gap-2">
+                    <button id="resume-font-toggle" type="button" class="flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-1.5 border transition hover:opacity-80"
+                        style="background-color: #f1f5f9; border-color: #cbd5e1; color: #334155;">
+                        A+
+                    </button>
                     <button class="flex items-center gap-1.5 text-xs font-medium rounded-full px-3 py-1.5 border transition hover:opacity-80"
                         style="background-color: #e0f7fa; border-color: #b2ebf2; color: #00838f;">
                         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -258,9 +294,10 @@
                         </svg>
                         Escuchar
                     </button>
+                    </div>
                 </div>
                 <div id="resume-summary-text" class="space-y-3">
-                    <p class="text-sm text-gray-600 leading-relaxed">
+                    <p class="resume-empty-text text-base text-gray-700 leading-7">
                         Resumen pendiente de generación.
                     </p>
                 </div>
@@ -268,9 +305,9 @@
 
             {{-- FAQ --}}
             <div class="bg-white border border-gray-200 rounded-xl p-5">
-                <h2 class="text-sm font-semibold mb-3" style="color: #0f1f3d;">Preguntas frecuentes</h2>
+                <h2 class="resume-block-title text-base font-semibold mb-3" style="color: #0f1f3d;">Preguntas frecuentes</h2>
                 <div id="resume-faq-list" class="rounded-lg border border-gray-100 divide-y divide-gray-100 overflow-hidden">
-                    <div class="px-4 py-3 text-sm text-gray-500">No hay preguntas frecuentes disponibles.</div>
+                    <div class="resume-empty-text px-4 py-3 text-base text-gray-600">No hay preguntas frecuentes disponibles.</div>
                 </div>
             </div>
 

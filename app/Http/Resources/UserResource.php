@@ -24,6 +24,20 @@ class UserResource extends JsonResource
                     'name' => $this->educationLevel?->name,
                 ]
             ),
+            'role' => $this->when(
+                $this->relationLoaded('role') && $this->role,
+                [
+                    'id' => $this->role?->id,
+                    'name' => $this->role?->name,
+                ]
+            ),
+            'company' => $this->when(
+                $this->relationLoaded('company') && $this->company,
+                [
+                    'id' => $this->company?->id,
+                    'name' => $this->company?->name,
+                ]
+            ),
             'conditions' => $this->when(
                 $this->relationLoaded('conditions'),
                 $this->conditions->map(fn ($condition) => [

@@ -39,6 +39,16 @@ class User extends Authenticatable
         return $this->belongsTo(EducationLevel::class);
     }
 
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
     public function conditions(): BelongsToMany
     {
         return $this->belongsToMany(Condition::class);

@@ -18,7 +18,7 @@
             <div class="flex items-center justify-between h-16">
 
                 {{-- Logo --}}
-                <a href="{{ route('upload') }}" class="flex items-center shrink-0">
+                <a href="{{ route('documents') }}" class="flex items-center shrink-0">
                     <img src="{{ asset('img/logo.png') }}" alt="Clarito" class="h-18 w-auto">
                 </a>
 
@@ -37,12 +37,27 @@
                         </button>
 
                         <div id="menu-dropdown-panel"
-                            class="hidden absolute right-0 mt-2 w-44 bg-white rounded-xl border border-gray-100 py-1 z-50"
+                            class="hidden absolute right-0 mt-2 w-52 bg-white rounded-xl border border-gray-100 py-1 z-50"
                             style="display: none;">
                             <a href="{{ route('documents') }}"
                                 class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                                 Mis documentos
                             </a>
+                            <a href="{{ route('upload') }}"
+                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                Nuevo Documento
+                            </a>
+                            <div id="menu-admin-links" class="hidden">
+                                <div class="border-t border-gray-100 my-1"></div>
+                                <a href="{{ route('admin.users') }}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    Admin Usuarios
+                                </a>
+                                <a href="{{ route('admin.companies') }}"
+                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    Admin Empresas
+                                </a>
+                            </div>
                             <div class="border-t border-gray-100 my-1"></div>
                             <button id="menu-logout-button" type="button"
                                 class="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50">
@@ -76,6 +91,7 @@
             const dropdownRoot = document.getElementById('menu-dropdown-root');
             const dropdownToggle = document.getElementById('menu-dropdown-toggle');
             const dropdownPanel = document.getElementById('menu-dropdown-panel');
+            const adminLinks = document.getElementById('menu-admin-links');
 
             if (!nameElement || !initialsElement) {
                 return;
@@ -90,6 +106,7 @@
 
                 const user = JSON.parse(rawUser);
                 const fullName = typeof user?.name === 'string' ? user.name.trim() : '';
+                const roleName = typeof user?.role?.name === 'string' ? user.role.name : '';
 
                 if (!fullName) {
                     return;
@@ -105,6 +122,10 @@
                     .join('');
 
                 initialsElement.textContent = initials || 'US';
+
+                if (adminLinks && roleName === 'admin') {
+                    adminLinks.classList.remove('hidden');
+                }
             } catch {
                 // Keep fallback values when local storage data is not valid.
             }

@@ -40,7 +40,7 @@ class LoginController extends Controller
             );
         }
 
-        $user->load(['educationLevel', 'conditions']);
+        $user->load(['educationLevel', 'conditions', 'role', 'company']);
 
         $accessToken = $user->createToken('local-web')->accessToken;
 
