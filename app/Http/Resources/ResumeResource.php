@@ -15,6 +15,8 @@ class ResumeResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
+            'company_id' => $this->company_id,
+            'environment_id' => $this->environment_id,
             'token' => $this->token,
             'original_name' => $this->original_name,
             'file_path' => $this->file_path,

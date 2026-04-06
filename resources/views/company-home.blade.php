@@ -15,6 +15,7 @@
 		const settingsForm = document.getElementById('company-settings-form');
 		const webhooksBody = document.getElementById('company-webhooks-body');
 		const webhookForm = document.getElementById('company-webhook-form');
+		const resumeUsageBody = document.getElementById('company-resume-usage-body');
 
 		const actionTypeSelect = document.getElementById('action_type_id');
 		const allowMultipleInput = document.getElementById('allow_multiple_confirmation');
@@ -58,7 +59,7 @@
 			return;
 		}
 
-		if (!statusBox || !envSelect || !settingsForm || !webhooksBody || !webhookForm) {
+		if (!statusBox || !envSelect || !settingsForm || !webhooksBody || !webhookForm || !resumeUsageBody) {
 			return;
 		}
 
@@ -314,6 +315,51 @@
 			renderWebhooks(Array.isArray(payload?.data) ? payload.data : []);
 		};
 
+		const renderResumeUsages = function (logs) {
+			if (!Array.isArray(logs) || !logs.length) {
+				resumeUsageBody.innerHTML = '<tr><td colspan="5" class="px-4 py-6 text-center text-sm text-gray-500">No hay registros para este ambiente.</td></tr>';
+				return;
+			}
+
+			resumeUsageBody.innerHTML = logs.map(function (item) {
+				return '<tr class="border-t border-gray-100">'
+					+ '<td class="px-4 py-3 text-sm text-gray-700">' + escapeHtml(item.action || '-') + '</td>'
+					+ '<td class="px-4 py-3 text-sm text-gray-600">' + escapeHtml(item.resume?.original_name || '-') + '</td>'
+					+ '<td class="px-4 py-3 text-sm text-gray-600">' + escapeHtml(item.user?.name || '-') + '</td>'
+					+ '<td class="px-4 py-3 text-sm text-gray-600">' + escapeHtml(item.environment || '-') + '</td>'
+					+ '<td class="px-4 py-3 text-sm text-gray-500">' + escapeHtml(item.created_at || '-') + '</td>'
+					+ '</tr>';
+			}).join('');
+		};
+
+		const loadResumeUsages = async function () {
+			const envId = getCurrentEnvironmentId();
+
+			if (!envId) {
+				return;
+			}
+
+			const response = await fetch('/api/company/resume-usages?environment_id=' + envId, {
+				headers: authorizedHeaders(false),
+			});
+
+			if (response.status === 401) {
+				clearSessionAndRedirectToLogin();
+				return;
+			}
+
+			if (!response.ok) {
+				setStatus('No se pudo cargar el log de uso de resumenes.', 'error');
+				return;
+			}
+
+			const payload = await response.json().catch(function () {
+				return {};
+			});
+
+			renderResumeUsages(Array.isArray(payload?.data) ? payload.data : []);
+		};
+
 		const deleteWebhook = async function (webhookId) {
 			const envId = getCurrentEnvironmentId();
 
@@ -341,6 +387,7 @@
 			setStatus('Cargando configuracion del ambiente...', 'info');
 			await loadSettings();
 			await loadWebhooks();
+			await loadResumeUsages();
 			hideStatus();
 		};
 
@@ -591,6 +638,25 @@
 					</tr>
 				</thead>
 				<tbody id="company-webhooks-body"></tbody>
+			</table>
+		</div>
+	</div>
+
+	<div class="mt-6 rounded-xl border border-gray-200 bg-white p-5">
+		<h2 class="mb-4 text-sm font-semibold" style="color:#0f1f3d;">Log de uso de resumenes</h2>
+
+		<div class="overflow-x-auto rounded-xl border border-gray-200">
+			<table class="min-w-full bg-white">
+				<thead class="bg-gray-50">
+					<tr>
+						<th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Accion</th>
+						<th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Archivo</th>
+						<th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Usuario</th>
+						<th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ambiente</th>
+						<th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Fecha</th>
+					</tr>
+				</thead>
+				<tbody id="company-resume-usage-body"></tbody>
 			</table>
 		</div>
 	</div>

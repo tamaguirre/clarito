@@ -42,6 +42,11 @@ class Company extends Model
         return $this->hasMany(CompanyInvitation::class);
     }
 
+    public function resumeUsages(): HasMany
+    {
+        return $this->hasMany(CompanyResumeUsage::class);
+    }
+
     public function getLogoUrlAttribute(): ?string
     {
         if (! $this->logo_path) {

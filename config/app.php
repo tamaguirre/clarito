@@ -28,6 +28,8 @@ return [
 
     'env' => env('APP_ENV', 'production'),
 
+    'production_mode' => (bool) env('APP_PRODUCTION', false),
+
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode

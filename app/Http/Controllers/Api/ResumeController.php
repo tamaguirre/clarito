@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ResumeStoreRequest;
 use App\Http\Requests\Api\ResumeSummaryRequest;
 use App\Http\Resources\ResumeResource;
+use App\Models\CompanyResumeUsage;
+use App\Models\Environment;
 use App\Models\Resume;
 use App\Models\Tag;
 use Illuminate\Http\JsonResponse;
@@ -88,16 +90,36 @@ class ResumeController extends Controller
     {
         $file = $request->file('file');
         $path = $file->store('uploads', 'public');
+        $companyId = $request->user()->company_id;
+        $environmentId = $this->resolveCurrentEnvironmentId();
 
         $resume = Resume::create([
             'token' => $this->generateUniqueToken(),
             'user_id' => $request->user()->id,
+            'company_id' => $companyId,
+            'environment_id' => $environmentId,
             'original_name' => $file->getClientOriginalName(),
             'file_path' => $path,
             'mime_type' => $file->getMimeType(),
             'file_size' => $file->getSize(),
             'summary_text' => self::DEFAULT_SUMMARY,
         ]);
+
+        if ($companyId) {
+            CompanyResumeUsage::query()->create([
+                'company_id' => $companyId,
+                'environment_id' => $environmentId,
+                'resume_id' => $resume->id,
+                'user_id' => $request->user()->id,
+                'action' => 'resume.created',
+                'meta' => [
+                    'token' => $resume->token,
+                    'original_name' => $resume->original_name,
+                    'mime_type' => $resume->mime_type,
+                    'file_size' => $resume->file_size,
+                ],
+            ]);
+        }
 
         $this->syncDefaultTags($resume);
 
@@ -162,5 +184,12 @@ class ResumeController extends Controller
         } while (Resume::query()->where('token', $token)->exists());
 
         return $token;
+    }
+
+    private function resolveCurrentEnvironmentId(): ?int
+    {
+        $environmentName = config('app.production_mode', false) ? 'production' : 'sandbox';
+
+        return Environment::query()->where('name', $environmentName)->value('id');
     }
 }

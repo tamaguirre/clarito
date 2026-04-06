@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\RegisterController;
 use App\Http\Controllers\Api\CompanyController;
 use App\Http\Controllers\Api\CompanyRegistrationController;
+use App\Http\Controllers\Api\CompanyResumeUsageController;
 use App\Http\Controllers\Api\CompanySettingsController;
 use App\Http\Controllers\Api\ConditionController;
 use App\Http\Controllers\Api\EducationLevelController;
@@ -38,6 +39,7 @@ Route::middleware(['auth:api', 'admin'])->prefix('admin')->group(function () {
 
 Route::middleware(['auth:api', 'company'])->prefix('company')->group(function () {
     Route::get('/catalogs', [CompanySettingsController::class, 'catalogs'])->name('api.company.catalogs');
+    Route::get('/resume-usages', [CompanyResumeUsageController::class, 'index'])->name('api.company.resume-usages.index');
 
     Route::get('/configs/{environment}', [CompanySettingsController::class, 'show'])->name('api.company.configs.show');
     Route::put('/configs/{environment}', [CompanySettingsController::class, 'update'])->name('api.company.configs.update');
